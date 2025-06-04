@@ -3,6 +3,7 @@ import { DataSource } from 'typeorm';
 import { config } from 'dotenv';
 import { Patient } from './entities/Patient';
 import { Doctor } from './entities/Doctor'
+import { Appointment } from './entities/Appointment';
 
 config();
 
@@ -15,5 +16,5 @@ export const AppDataSource = new DataSource({
   database: process.env.DB_NAME,
   synchronize: true,
   logging: true,
-  entities: [Patient,Doctor],
+  entities: [Patient,Doctor,Appointment],
 });
