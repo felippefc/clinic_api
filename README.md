@@ -113,7 +113,7 @@ src/
 
 ## 📫 Contato
 
-Desenvolvido por Felippe 
-LinkedIn: https://www.linkedin.com/in/felippe-feliciano-de-carvalho-72393220a/
+- Desenvolvido por Felippe 
+- LinkedIn: https://www.linkedin.com/in/felippe-feliciano-de-carvalho-72393220a/
 
 ---
