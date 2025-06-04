@@ -1,16 +1,15 @@
 {
   "compilerOptions": {
-    "target": "es2017",                       // para suportar async/await e Object.values
+    "target": "es6",
     "module": "commonjs",
-    "lib": ["es2017"],                        // adiciona suporte às libs ES modernas
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "skipLibCheck": true,                     // ignora erros de tipagem em node_modules
-    "types": ["node", "express"]              // adiciona as tipagens necessárias
+    "types": ["node", "express"]
   },
   "include": ["src"]
 }
+
