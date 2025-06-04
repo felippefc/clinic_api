@@ -3,6 +3,7 @@ import { AppDataSource } from './data-source';
 import patientRoutes from "./routes/patient.routes";
 import doctorRoutes from "./routes/doctor.routes";
 import appointmentRoutes from "./routes/appointment.routes";
+import { errorMiddleware } from './errors/errorMiddleware';
 
 
 const app = express();
@@ -10,6 +11,7 @@ app.use(express.json());
 app.use(patientRoutes);
 app.use(doctorRoutes);
 app.use(appointmentRoutes);
+app.use(errorMiddleware);
 
 
 AppDataSource.initialize()

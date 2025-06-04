@@ -1,118 +1,182 @@
-import { Request, Response } from "express";
-import { AppDataSource } from "../data-source";
-import { Appointment } from "../entities/Appointment";
-import { Patient } from "../entities/Patient";
-import { Doctor } from "../entities/Doctor";
-import { CreateAppointmentDTO } from "../dtos/CreateAppointmentDTO";
-import { plainToInstance } from "class-transformer";
-import { validate } from "class-validator";
+import { Request, Response, NextFunction } from 'express';
+import { AppDataSource } from '../data-source';
+import { Appointment } from '../entities/Appointment';
+import { Patient } from '../entities/Patient';
+import { Doctor } from '../entities/Doctor';
+import { AppError } from '../errors/AppError';
 
-// CREATE
-export async function createAppointment(req: Request, res: Response): Promise<any> {
-  const dto = plainToInstance(CreateAppointmentDTO, req.body);
-  const errors = await validate(dto);
+// CREATE Appointment
+export async function createAppointment(req: Request, res: Response, next: NextFunction): Promise<any> {
+  try {
+    const repo = AppDataSource.getRepository(Appointment);
+    const patientRepo = AppDataSource.getRepository(Patient);
+    const doctorRepo = AppDataSource.getRepository(Doctor);
 
-  if (errors.length > 0) return res.status(400).json({ errors });
+    const { patientId, doctorId, date } = req.body;
 
-  const patientRepo = AppDataSource.getRepository(Patient);
-  const doctorRepo = AppDataSource.getRepository(Doctor);
-  const appointmentRepo = AppDataSource.getRepository(Appointment);
+    if (!patientId || !doctorId || !date) {
+      throw new AppError("Missing patientId, doctorId or date", 400);
+    }
 
-  const patient = await patientRepo.findOneBy({ id: dto.patientId });
-  const doctor = await doctorRepo.findOneBy({ id: dto.doctorId });
+    const patient = await patientRepo.findOneBy({ id: patientId });
+    if (!patient) throw new AppError("Patient not found", 404);
 
-  if (!patient || !doctor) {
-    return res.status(404).json({ message: "Patient or doctor not found" });
+    const doctor = await doctorRepo.findOneBy({ id: doctorId });
+    if (!doctor) throw new AppError("Doctor not found", 404);
+
+    const appointmentDate = new Date(date);
+    if (isNaN(appointmentDate.getTime())) {
+      throw new AppError("Invalid date format", 400);
+    }
+
+    // ✅ Validação: data no futuro
+    const now = new Date();
+    if (appointmentDate < now) {
+      throw new AppError("Cannot schedule an appointment in the past", 400);
+    }
+
+    // ✅ Validação: horário entre 08:00 e 18:00
+    const hour = appointmentDate.getHours();
+    if (hour < 8 || hour >= 18) {
+      throw new AppError("Appointment must be between 08:00 and 18:00", 400);
+    }
+
+    // ✅ Conflito: horário já ocupado pelo médico
+    const conflictingDoctorAppointment = await repo.findOne({
+      where: {
+        doctor: { id: doctorId },
+        date: appointmentDate,
+      },
+      relations: ["doctor"],
+    });
+
+    if (conflictingDoctorAppointment) {
+      throw new AppError("Já existe um agendamento para este médico neste horário.", 409);
+    }
+
+    // ✅ Conflito: horário já ocupado pelo paciente
+    const conflictingPatientAppointment = await repo.findOne({
+      where: {
+        patient: { id: patientId },
+        date: appointmentDate,
+      },
+      relations: ["patient"],
+    });
+
+    if (conflictingPatientAppointment) {
+      throw new AppError("Paciente já possui um agendamento neste horário.", 409);
+    }
+
+    // ✅ Criar agendamento
+    const appointment = repo.create({
+      patient,
+      doctor,
+      date: appointmentDate,
+    });
+
+    await repo.save(appointment);
+
+    return res.status(201).json(appointment);
+  } catch (error) {
+    next(error);
   }
-
-  const appointment = appointmentRepo.create({
-    date: new Date(dto.date),
-    patient,
-    doctor,
-  });
-
-  await appointmentRepo.save(appointment);
-
-  return res.status(201).json(appointment);
 }
 
-// READ ALL
-export async function listAppointments(req: Request, res: Response): Promise<any> {
-  const appointments = await AppDataSource.getRepository(Appointment).find();
-  return res.json(appointments);
+
+
+
+// LIST ALL appointments (optional filters by doctorId or patientId)
+export async function listAppointments(req: Request, res: Response, next: NextFunction): Promise<any> {
+  try {
+    const repo = AppDataSource.getRepository(Appointment);
+    const { doctorId, patientId } = req.query;
+
+    let where = {};
+    if (doctorId) where = { ...where, doctor: { id: Number(doctorId) } };
+    if (patientId) where = { ...where, patient: { id: Number(patientId) } };
+
+    const appointments = await repo.find({
+      where,
+      relations: ['patient', 'doctor'],
+      order: { date: 'ASC' },
+    });
+
+    return res.json(appointments);
+  } catch (error) {
+    next(error);
+  }
 }
 
-// READ ONE
-export async function getAppointment(req: Request, res: Response): Promise<any> {
-  const { id } = req.params;
-  const appointment = await AppDataSource.getRepository(Appointment).findOneBy({ id: parseInt(id) });
+// GET appointment by id
+export async function getAppointment(req: Request, res: Response, next: NextFunction): Promise<any> {
+  try {
+    const repo = AppDataSource.getRepository(Appointment);
+    const { id } = req.params;
 
-  if (!appointment) return res.status(404).json({ message: "Appointment not found" });
+    const appointment = await repo.findOne({
+      where: { id: Number(id) },
+      relations: ['patient', 'doctor'],
+    });
 
-  return res.json(appointment);
+    if (!appointment) throw new AppError("Appointment not found", 404);
+
+    return res.json(appointment);
+  } catch (error) {
+    next(error);
+  }
 }
 
-// UPDATE
-export async function updateAppointment(req: Request, res: Response): Promise<any> {
-  const { id } = req.params;
-  const repo = AppDataSource.getRepository(Appointment);
-  const appointment = await repo.findOneBy({ id: parseInt(id) });
+// UPDATE appointment
+export async function updateAppointment(req: Request, res: Response, next: NextFunction): Promise<any> {
+  try {
+    const repo = AppDataSource.getRepository(Appointment);
+    const patientRepo = AppDataSource.getRepository(Patient);
+    const doctorRepo = AppDataSource.getRepository(Doctor);
+    const { id } = req.params;
+    const { patientId, doctorId, date } = req.body;
 
-  if (!appointment) return res.status(404).json({ message: "Appointment not found" });
+    const appointment = await repo.findOneBy({ id: Number(id) });
+    if (!appointment) throw new AppError("Appointment not found", 404);
 
-  const dto = plainToInstance(CreateAppointmentDTO, req.body);
-  const errors = await validate(dto);
-  if (errors.length > 0) return res.status(400).json({ errors });
+    if (patientId) {
+      const patient = await patientRepo.findOneBy({ id: patientId });
+      if (!patient) throw new AppError("Patient not found", 404);
+      appointment.patient = patient;
+    }
 
-  const patient = await AppDataSource.getRepository(Patient).findOneBy({ id: dto.patientId });
-  const doctor = await AppDataSource.getRepository(Doctor).findOneBy({ id: dto.doctorId });
+    if (doctorId) {
+      const doctor = await doctorRepo.findOneBy({ id: doctorId });
+      if (!doctor) throw new AppError("Doctor not found", 404);
+      appointment.doctor = doctor;
+    }
 
-  if (!patient || !doctor) return res.status(404).json({ message: "Patient or doctor not found" });
+    if (date) {
+      const appointmentDate = new Date(date);
+      if (isNaN(appointmentDate.getTime())) {
+        throw new AppError("Invalid date format", 400);
+      }
+      appointment.date = appointmentDate;
+    }
 
-  repo.merge(appointment, {
-    date: new Date(dto.date),
-    patient,
-    doctor,
-  });
-
-  await repo.save(appointment);
-
-  return res.json(appointment);
+    await repo.save(appointment);
+    return res.json(appointment);
+  } catch (error) {
+    next(error);
+  }
 }
 
-// DELETE
-export async function deleteAppointment(req: Request, res: Response): Promise<any> {
-  const { id } = req.params;
-  const repo = AppDataSource.getRepository(Appointment);
-  const appointment = await repo.findOneBy({ id: parseInt(id) });
+// DELETE appointment
+export async function deleteAppointment(req: Request, res: Response, next: NextFunction) : Promise<any>{
+  try {
+    const repo = AppDataSource.getRepository(Appointment);
+    const { id } = req.params;
 
-  if (!appointment) return res.status(404).json({ message: "Appointment not found" });
+    const appointment = await repo.findOneBy({ id: Number(id) });
+    if (!appointment) throw new AppError("Appointment not found", 404);
 
-  await repo.remove(appointment);
-
-  return res.status(204).send();
-}
-
-export async function listAppointmentsByDoctor(req: Request, res: Response): Promise<any> {
-  const { doctorId } = req.params;
-  const repo = AppDataSource.getRepository(Appointment);
-
-  const appointments = await repo.find({
-    where: { doctor: { id: Number(doctorId) } },
-    relations: ["patient", "doctor"],
-  });
-
-  return res.json(appointments);
-}
-
-export async function listAppointmentsByPatient(req: Request, res: Response): Promise<any> {
-  const { patientId } = req.params;
-  const repo = AppDataSource.getRepository(Appointment);
-
-  const appointments = await repo.find({
-    where: { patient: { id: Number(patientId) } },
-    relations: ["patient", "doctor"],
-  });
-
-  return res.json(appointments);
+    await repo.remove(appointment);
+    return res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
 }
