@@ -111,6 +111,12 @@ src/
 
 ---
 
+## 📦 Deploy da API de Agendamento Clínico
+
+- [Como fazer o deploy](https://github.com/felippefc/clinic_api/blob/main/DEPLOY_GUIDE.md)
+
+---
+
 ## 📫 Contato
 
 - Desenvolvido por Felippe 
