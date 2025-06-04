@@ -92,3 +92,27 @@ export async function deleteAppointment(req: Request, res: Response): Promise<an
 
   return res.status(204).send();
 }
+
+export async function listAppointmentsByDoctor(req: Request, res: Response): Promise<any> {
+  const { doctorId } = req.params;
+  const repo = AppDataSource.getRepository(Appointment);
+
+  const appointments = await repo.find({
+    where: { doctor: { id: Number(doctorId) } },
+    relations: ["patient", "doctor"],
+  });
+
+  return res.json(appointments);
+}
+
+export async function listAppointmentsByPatient(req: Request, res: Response): Promise<any> {
+  const { patientId } = req.params;
+  const repo = AppDataSource.getRepository(Appointment);
+
+  const appointments = await repo.find({
+    where: { patient: { id: Number(patientId) } },
+    relations: ["patient", "doctor"],
+  });
+
+  return res.json(appointments);
+}
