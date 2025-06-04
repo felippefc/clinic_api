@@ -21,7 +21,7 @@ Esta é uma API RESTful para gerenciamento de **pacientes, médicos e agendament
 1. Clone o repositório:
 
 ```bash
-git clone https://github.com/seu-usuario/clinica-api.git
+git clone https://https://github.com/felippefc/clinic_api
 cd clinica-api
 ```
 
@@ -50,7 +50,7 @@ npm run typeorm migration:run
 5. Inicie o servidor:
 
 ```bash
-npm run dev
+docker compose up
 ```
 
 A API estará rodando em: **http://localhost:3000**
@@ -113,8 +113,7 @@ src/
 
 ## 📫 Contato
 
-Desenvolvido por [Seu Nome]  
-Email: seuemail@example.com  
-LinkedIn: [linkedin.com/in/seunome](https://linkedin.com/in/seunome)
+Desenvolvido por Felippe 
+LinkedIn: https://www.linkedin.com/in/felippe-feliciano-de-carvalho-72393220a/
 
 ---
