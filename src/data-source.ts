@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { DataSource } from 'typeorm';
 import { config } from 'dotenv';
 import { Patient } from './entities/Patient';
+import { Doctor } from './entities/Doctor'
 
 config();
 
@@ -14,5 +15,5 @@ export const AppDataSource = new DataSource({
   database: process.env.DB_NAME,
   synchronize: true,
   logging: true,
-  entities: [Patient],
+  entities: [Patient,Doctor],
 });

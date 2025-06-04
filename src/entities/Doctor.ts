@@ -1,10 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from "typeorm";
 
 @Entity()
-export class Patient {
-  @PrimaryGeneratedColumn()
+export class Doctor {
+   @PrimaryGeneratedColumn() // 
   id!: number;
-
+  
   @Column()
   name!: string;
 
@@ -12,7 +12,7 @@ export class Patient {
   email!: string;
 
   @Column()
-  phone!: string;
+  specialty!: string;
 
   @CreateDateColumn()
   createdAt!: Date;
@@ -20,4 +20,3 @@ export class Patient {
   @UpdateDateColumn()
   updatedAt!: Date;
 }
-

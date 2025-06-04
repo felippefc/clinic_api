@@ -37,7 +37,7 @@ export async function listPatients(req: Request, res: Response) : Promise<any> {
 // READ ONE
 export async function getPatient(req: Request, res: Response) : Promise<any> {
   const repo = AppDataSource.getRepository(Patient);
-  const { id } = req.params;
+  const  id  = Number(req.params.id);
 
   const patient = await repo.findOneBy({ id });
   if (!patient) {
@@ -50,7 +50,7 @@ export async function getPatient(req: Request, res: Response) : Promise<any> {
 // UPDATE
 export async function updatePatient(req: Request, res: Response) : Promise<any> {
   const repo = AppDataSource.getRepository(Patient);
-  const { id } = req.params;
+  const  id  = Number(req.params.id);
 
   const patient = await repo.findOneBy({ id });
   if (!patient) {
@@ -72,7 +72,7 @@ export async function updatePatient(req: Request, res: Response) : Promise<any> 
 // DELETE
 export async function deletePatient(req: Request, res: Response) : Promise<any> {
   const repo = AppDataSource.getRepository(Patient);
-  const { id } = req.params;
+  const  id  = Number(req.params.id);
 
   const patient = await repo.findOneBy({ id });
   if (!patient) {
